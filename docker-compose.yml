@@ -12,10 +12,17 @@ services:
       - PORT=3000
       - HOST=https://timoshenskiy.com
 #   MONGO_URL - урл базы данных, всегда имеет вид mongodb://{host}/{port}/{база данных}
-      - MONGO_URL=mongodb://api_db:27017/api
+      - MONGO_URL=mongodb://docker-template_api-db_1:27017/api
 #   depends_on - указывает сервисы, которые должны быть запущены перед запуском
     depends_on:
       - api-db
 
   api-db:
     image: mongo:latest
+# volumes - дополнительное хранилище вне контейнера для хранения данных и их шаринга между сервисами
+    volumes:
+      - mongodb_api:/data/db
+
+# настройка позволяет использовать этот volume во всех сервисах
+volumes:
+  mongodb_api:
