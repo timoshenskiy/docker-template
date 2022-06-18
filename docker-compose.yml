@@ -57,6 +57,17 @@ services:
     volumes:
       - mongodb_auth:/data/db
 
+  nginx:
+    image: nginx:stable-alpine
+    container_name: docker-template-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf.prod:/etc/nginx/conf.d/nginx.conf
+    # необходимо, чтобы сервис фронтенда был доспен раньше сервиса nginx, потому что nginx упадет т.к. не сможет спроксировать запрос на сервис, который ранится
+    depends_on:
+      - frontend
+
 # настройка позволяет использовать этот volume во всех сервисах
 volumes:
   mongodb_api:
