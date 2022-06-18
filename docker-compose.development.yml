@@ -1,6 +1,11 @@
 version: '3'
 
 services:
+  frontend:
+    command: npm run start
+    # по умолчанию без stdin_open и tty из-за интерактивной консоли frontend на react не будет запущен
+    stdin_open: true
+    tty: true
   api:
     build: ./api
     command: npm run dev

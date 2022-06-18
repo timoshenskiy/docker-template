@@ -1,28 +1,63 @@
 version: '3'
 
 services:
+  frontend:
+    build: ./frontend
+    container_name: docker-template-frontend
+    # используем serve для использования минифицированной версии на статичном сервере
+    command: serve -s build -l 3000
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    # volumes позволяют применять внесенные изменения к проекту без перезапуска контейнера
+    volumes:
+      - ./frontend/src:/usr/src/app/src
+
   api:
     build: ./api
+    container_name: docker-template-api
     command: npm run start
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3001:3001"
 #   environment - перечисление глобальных переменных для сервиса
     environment:
-      - PORT=3000
+      - PORT=3001
       - HOST=https://timoshenskiy.com
 #   MONGO_URL - урл базы данных, всегда имеет вид mongodb://{host}/{port}/{база данных}
-      - MONGO_URL=mongodb://docker-template_api-db_1:27017/api
+      - MONGO_URL=mongodb://docker-template-api-db:27017/api
 #   depends_on - указывает сервисы, которые должны быть запущены перед запуском
     depends_on:
       - api-db
 
+  auth:
+    build: ./auth
+    container_name: docker-template-auth
+    command: npm run start
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - HOST=https://timoshenskiy.com
+      - MONGO_URL=mongodb://docker-template-auth-db:27017/api
+    depends_on:
+      - auth-db
+
   api-db:
     image: mongo:latest
+    container_name: docker-template-api-db
 # volumes - дополнительное хранилище вне контейнера для хранения данных и их шаринга между сервисами
     volumes:
       - mongodb_api:/data/db
 
+  auth-db:
+    image: mongo:latest
+    container_name: docker-template-auth-db
+    volumes:
+      - mongodb_auth:/data/db
+
 # настройка позволяет использовать этот volume во всех сервисах
 volumes:
   mongodb_api:
+  mongodb_auth:
