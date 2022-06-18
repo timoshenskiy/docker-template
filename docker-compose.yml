@@ -2,47 +2,49 @@ version: '3'
 
 services:
   frontend:
-    build: ./frontend
+    build:
+      dockerfile: Dockerfile.prod
+      context: ./frontend
     container_name: docker-template-frontend
     # используем serve для использования минифицированной версии на статичном сервере
     command: serve -s build -l 3000
-    ports:
-      - "3000:3000"
     restart: unless-stopped
     # volumes позволяют применять внесенные изменения к проекту без перезапуска контейнера
     volumes:
       - ./frontend/src:/usr/src/app/src
+    networks:
+      - docker-template-network
 
   api:
     build: ./api
     container_name: docker-template-api
     command: npm run start
     restart: unless-stopped
-    ports:
-      - "3001:3001"
 #   environment - перечисление глобальных переменных для сервиса
     environment:
       - PORT=3001
-      - HOST=https://timoshenskiy.com
 #   MONGO_URL - урл базы данных, всегда имеет вид mongodb://{host}/{port}/{база данных}
       - MONGO_URL=mongodb://docker-template-api-db:27017/api
-#   depends_on - указывает сервисы, которые должны быть запущены перед запуском
+      - AUTH_API_URL=http://auth:3002/api
+    # depends_on - указывает сервисы, которые должны быть запущены перед запуском
     depends_on:
       - api-db
+    networks:
+      - docker-template-network
 
   auth:
     build: ./auth
     container_name: docker-template-auth
     command: npm run start
     restart: unless-stopped
-    ports:
-      - "3002:3002"
     environment:
       - PORT=3002
-      - HOST=https://timoshenskiy.com
       - MONGO_URL=mongodb://docker-template-auth-db:27017/api
+      - API_URL=http://api:3001/api
     depends_on:
       - auth-db
+    networks:
+      - docker-template-network
 
   api-db:
     image: mongo:latest
@@ -50,12 +52,16 @@ services:
 # volumes - дополнительное хранилище вне контейнера для хранения данных и их шаринга между сервисами
     volumes:
       - mongodb_api:/data/db
+    networks:
+      - docker-template-network
 
   auth-db:
     image: mongo:latest
     container_name: docker-template-auth-db
     volumes:
       - mongodb_auth:/data/db
+    networks:
+      - docker-template-network
 
   nginx:
     image: nginx:stable-alpine
@@ -67,8 +73,16 @@ services:
     # необходимо, чтобы сервис фронтенда был доспен раньше сервиса nginx, потому что nginx упадет т.к. не сможет спроксировать запрос на сервис, который ранится
     depends_on:
       - frontend
+      - api
+      - auth
+    networks:
+      - docker-template-network
 
 # настройка позволяет использовать этот volume во всех сервисах
 volumes:
   mongodb_api:
   mongodb_auth:
+
+networks:
+  docker-template-network:
+    driver: bridge

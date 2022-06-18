@@ -2,12 +2,26 @@ version: '3'
 
 services:
   frontend:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./frontend
     command: npm run start
     # по умолчанию без stdin_open и tty из-за интерактивной консоли frontend на react не будет запущен
     stdin_open: true
     tty: true
+    environment:
+      - WDS_SOCKET_PORT=0
   api:
     build: ./api
     command: npm run dev
     volumes:
       - ./api/src:/usr/src/app/src
+  auth:
+    build: ./auth
+    command: npm run dev
+    volumes:
+      - ./auth/src:/usr/src/app/src
+
+  nginx:
+    volumes:
+      - ./nginx/nginx.conf.dev:/etc/nginx/conf.d/nginx.conf
